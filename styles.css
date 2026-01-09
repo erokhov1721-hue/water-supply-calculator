@@ -1,0 +1,1227 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f3f4f7;
+  min-height: 100vh;
+}
+
+/* ===== Общий layout ===== */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ===== Сайдбар проектов ===== */
+.sidebar {
+  width: 320px;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-header {
+  padding: 24px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-header h1 {
+  font-size: 1.3em;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #fff;
+}
+
+.sidebar-header p {
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Форма создания проекта */
+.new-project-form {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.new-project-form input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 14px;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.new-project-form input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.new-project-form input:focus {
+  outline: none;
+  border-color: #0d6efd;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.new-project-form button {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #0d6efd 0%, #0056d2 100%);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.new-project-form button:hover {
+  background: linear-gradient(135deg, #0b5ed7 0%, #004bb5 100%);
+  transform: translateY(-1px);
+}
+
+/* Список проектов */
+.projects-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.projects-list-title {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 8px 8px 12px;
+}
+
+/* Карточка проекта */
+.project-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.project-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(4px);
+}
+
+.project-card.active {
+  background: rgba(13, 110, 253, 0.25);
+  border-color: #0d6efd;
+}
+
+.project-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.project-name {
+  font-size: 1em;
+  font-weight: 600;
+  color: #fff;
+  word-break: break-word;
+  flex: 1;
+  margin-right: 8px;
+}
+
+.project-menu-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.project-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.project-stats {
+  font-size: 0.8em;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 6px;
+}
+
+.project-dates {
+  font-size: 0.75em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Меню действий проекта */
+.project-menu {
+  position: absolute;
+  right: 12px;
+  top: 40px;
+  background: #2a2a4a;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  min-width: 140px;
+  overflow: hidden;
+  display: none;
+}
+
+.project-menu.show {
+  display: block;
+  animation: fadeIn 0.15s ease;
+}
+
+.project-menu button {
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.project-menu button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.project-menu button.danger {
+  color: #ff6b6b;
+}
+
+.project-menu button.danger:hover {
+  background: rgba(255, 107, 107, 0.15);
+}
+
+/* ===== Основная область ===== */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.main-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header {
+  background: linear-gradient(135deg, #0066cc 0%, #004d99 100%);
+  color: #fff;
+  padding: 24px 30px;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-left h1 {
+  font-size: 1.6em;
+  margin-bottom: 4px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.header-left p {
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+.header-right {
+  text-align: right;
+}
+
+.current-project-name {
+  font-size: 1.1em;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 20px;
+}
+
+/* ===== Вкладки (Apple Music style) ===== */
+.tabs-container {
+  background: #f8f9fa;
+  padding: 16px 30px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.tabs-nav {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tabs-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-btn {
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #6c757d;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  border-radius: 10px 10px 0 0;
+}
+
+.tab-btn:hover {
+  background: rgba(0, 102, 204, 0.08);
+  color: #495057;
+  transform: none;
+}
+
+.tab-btn.active {
+  color: #0066cc;
+  font-weight: 600;
+  background: #fff;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(135deg, #0066cc 0%, #004d99 100%);
+  border-radius: 3px 3px 0 0;
+}
+
+/* Контент вкладки */
+.tab-content {
+  min-height: 400px;
+}
+
+/* Контейнер калькулятора (внутри вкладки) */
+#calculatorContainer {
+  display: block;
+}
+
+/* Контейнер заглушки */
+#placeholderContainer {
+  display: none;
+}
+
+/* Заглушка для неактивных вкладок */
+.placeholder-container {
+  padding: 0;
+}
+
+.placeholder-container .header {
+  border-radius: 0;
+}
+
+.placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 40px;
+  text-align: center;
+  min-height: 400px;
+  background: linear-gradient(180deg, #f8f9fa 0%, #fff 100%);
+}
+
+.placeholder-icon {
+  width: 120px;
+  height: 120px;
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  color: #6c757d;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.placeholder-content h2 {
+  font-size: 1.5em;
+  color: #343a40;
+  margin-bottom: 12px;
+}
+
+.placeholder-content .note {
+  max-width: 400px;
+  font-size: 1em;
+  color: #6c757d;
+  line-height: 1.6;
+}
+
+/* ===== Панель управления ===== */
+.control-panel {
+  padding: 20px;
+}
+
+/* ===== Аккордеон (сворачиваемые блоки) ===== */
+.accordion {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.accordion:hover {
+  border-color: #dee2e6;
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+  cursor: pointer;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #343a40;
+  list-style: none;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.accordion-header::-webkit-details-marker {
+  display: none;
+}
+
+.accordion-header:hover {
+  background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+}
+
+.accordion-icon {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.accordion-icon::before,
+.accordion-icon::after {
+  content: '';
+  position: absolute;
+  background: #0066cc;
+  border-radius: 2px;
+  transition: transform 0.3s ease;
+}
+
+.accordion-icon::before {
+  width: 12px;
+  height: 2px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.accordion-icon::after {
+  width: 2px;
+  height: 12px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.accordion[open] .accordion-icon::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+  opacity: 0;
+}
+
+.accordion-content {
+  padding: 0 20px 20px;
+  animation: accordionOpen 0.3s ease;
+}
+
+@keyframes accordionOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.subsection-title {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #495057;
+  margin: 16px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* Заглушка внутри аккордеона */
+.placeholder-block {
+  text-align: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+  border-radius: 8px;
+  border: 1px dashed #dee2e6;
+}
+
+.placeholder-text {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 8px;
+}
+
+.placeholder-block .note {
+  max-width: 400px;
+  margin: 0 auto;
+  color: #868e96;
+}
+
+.input-group {
+  margin-bottom: 14px;
+}
+
+.input-group label {
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.input-group input,
+.input-group select {
+  padding: 10px;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 16px;
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+  outline: none;
+  border-color: #0d6efd;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.row-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* ===== Результаты ===== */
+.results {
+  padding: 20px;
+  background: #fff;
+  margin-top: 20px;
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th,
+td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+  vertical-align: middle;
+}
+
+th {
+  background: #0066cc;
+  color: #fff;
+}
+
+.floors-table input,
+.floors-table select {
+  width: 100%;
+  text-align: center;
+}
+
+.zone-table input,
+.zone-table select {
+  width: 100%;
+  text-align: center;
+}
+
+.note {
+  font-size: 0.95rem;
+  color: #555;
+  margin-top: 6px;
+}
+
+.warnings {
+  background: #fff3cd;
+  border: 1px solid #ffe69c;
+  color: #664d03;
+  padding: 12px;
+  border-radius: 10px;
+  margin-top: 12px;
+}
+
+.section-title {
+  margin-top: 12px;
+}
+
+.totals {
+  margin-top: 10px;
+  font-weight: 700;
+}
+
+details {
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 8px 0;
+  background: #fafbfc;
+}
+
+details summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+button {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #0d6efd;
+}
+
+.btn-secondary:hover {
+  background: #0b5ed7;
+}
+
+.btn-danger {
+  background: #dc3545;
+}
+
+.btn-danger:hover {
+  background: #bb2d3b;
+}
+
+.btn-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.sec-card {
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 12px;
+  background: #fff;
+}
+
+.sec-title {
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.autofill {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.autofill .input-group {
+  margin: 0;
+}
+
+.autofill .btns {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+}
+
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lock-hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* ===== Модальное окно ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  min-width: 360px;
+  max-width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal h3 {
+  margin-bottom: 16px;
+  font-size: 1.2em;
+}
+
+.modal input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.modal input:focus {
+  outline: none;
+  border-color: #0d6efd;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.modal-buttons button {
+  padding: 10px 20px;
+}
+
+/* ===== Пустое состояние ===== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.empty-state p {
+  margin-top: 10px;
+  font-size: 0.9em;
+}
+
+/* ===== Импорт из Excel ===== */
+.file-input-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.file-input-wrapper input[type="file"] {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-input-wrapper input[type="file"]:hover {
+  border-color: #0d6efd;
+  background: #e7f1ff;
+}
+
+.file-input-wrapper input[type="file"]::file-selector-button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #0d6efd;
+  color: #fff;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background 0.2s ease;
+}
+
+.file-input-wrapper input[type="file"]::file-selector-button:hover {
+  background: #0b5ed7;
+}
+
+.file-input-wrapper button {
+  white-space: nowrap;
+}
+
+.file-input-wrapper button:disabled {
+  background: #adb5bd;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.import-status {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.95em;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease;
+}
+
+.import-status.success {
+  background: #d1e7dd;
+  color: #0a5132;
+  border: 1px solid #a3cfbb;
+}
+
+.import-status.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f1aeb5;
+}
+
+/* ===== Респонсив ===== */
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 280px;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-height: 40vh;
+  }
+
+  .main-content {
+    padding: 12px;
+  }
+
+  .header {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .header-right {
+    text-align: center;
+  }
+
+  .row,
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .autofill {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .autofill {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-header h1 {
+    font-size: 1.1em;
+  }
+}
+
+/* ===== Блок Трубопроводы ===== */
+.pipeline-section {
+  margin-bottom: 24px;
+}
+
+.pipeline-section h4 {
+  font-size: 1.05em;
+  font-weight: 600;
+  color: #343a40;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.pipeline-section.pipeline-summary h4 {
+  color: #0066cc;
+  border-bottom-color: #0066cc;
+}
+
+.pipeline-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.pipeline-table th {
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  color: #fff;
+  font-weight: 600;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.9em;
+}
+
+.pipeline-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #e9ecef;
+  background: #fff;
+  font-size: 0.95em;
+}
+
+.pipeline-table .sys-cell {
+  font-weight: 700;
+  color: #0066cc;
+  background: #f0f7ff;
+  border-right: 2px solid #e9ecef;
+  vertical-align: middle;
+}
+
+.pipeline-table tbody tr:hover td {
+  background: #f8f9fa;
+}
+
+.pipeline-table tbody tr:hover .sys-cell {
+  background: #e7f1ff;
+}
+
+.pipeline-table tfoot .total-row td {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-top: 2px solid #dee2e6;
+  font-size: 0.95em;
+}
+
+.pipeline-summary .pipeline-table th {
+  background: linear-gradient(135deg, #0066cc 0%, #004d99 100%);
+}
+
+.pipeline-summary .pipeline-table tfoot .total-row td {
+  background: linear-gradient(135deg, #e7f1ff 0%, #cfe2ff 100%);
+  border-top-color: #0066cc;
+}
+
+/* Параметры расчёта в блоке Трубопроводы */
+.pipeline-params {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.pipeline-params .params-title {
+  font-weight: 700;
+  color: #343a40;
+  margin-bottom: 12px;
+  font-size: 0.95em;
+}
+
+.pipeline-params .params-grid {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.pipeline-params .param-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pipeline-params .param-label {
+  color: #6c757d;
+  font-size: 0.9em;
+}
+
+.pipeline-params .param-value {
+  font-weight: 700;
+  color: #0066cc;
+  background: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.95em;
+}
+
+.pipeline-params .params-formula {
+  font-size: 0.85em;
+  color: #6c757d;
+}
+
+.pipeline-params .params-formula code {
+  background: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  color: #495057;
+}
+
+.pipeline-table code {
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.85em;
+  color: #495057;
+}
+
+/* Скрываемая детализация в блоке Трубопроводы */
+.pipeline-details {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #fff;
+  margin: 0;
+  padding: 0;
+}
+
+.pipeline-details summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #495057;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  list-style: none;
+}
+
+.pipeline-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.pipeline-details summary::before {
+  content: '▶';
+  display: inline-block;
+  margin-right: 10px;
+  font-size: 0.75em;
+  transition: transform 0.2s ease;
+}
+
+.pipeline-details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.pipeline-details summary:hover {
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+}
+
+.pipeline-details[open] summary {
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.pipeline-details .pipeline-table {
+  margin: 0;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Блок Арматура */
+.fittings-section {
+  margin-bottom: 16px;
+}
+
+.fittings-section h4 {
+  font-size: 1.05em;
+  font-weight: 600;
+  color: #343a40;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+/* Сворачиваемые подразделы в Арматуре */
+.fittings-details {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #fff;
+  margin: 0;
+  padding: 0;
+}
+
+.fittings-details summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #495057;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  list-style: none;
+}
+
+.fittings-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.fittings-details summary::before {
+  content: '▶';
+  display: inline-block;
+  margin-right: 10px;
+  font-size: 0.75em;
+  transition: transform 0.2s ease;
+}
+
+.fittings-details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.fittings-details summary:hover {
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+}
+
+.fittings-details[open] summary {
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.fittings-details .pipeline-table {
+  margin: 0;
+  border-radius: 0 0 8px 8px;
+}
+
+.fittings-details .note {
+  padding: 8px 16px 12px;
+  margin: 0;
+}
+
+/* ===== Блок расчёта сшитого полиэтилена в МОП ===== */
+.mop-block {
+  padding: 8px 0;
+}
+
+.mop-block .row-2 {
+  margin-bottom: 16px;
+}
+
+.mop-results {
+  background: linear-gradient(135deg, #e7f1ff 0%, #cfe2ff 100%);
+  border: 1px solid #b6d4fe;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-top: 12px;
+}
+
+.mop-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dashed #b6d4fe;
+  margin-bottom: 8px;
+}
+
+.mop-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 102, 204, 0.15);
+}
+
+.mop-result-row:last-child {
+  border-bottom: none;
+}
+
+.mop-label {
+  font-weight: 500;
+  color: #495057;
+  font-size: 0.95em;
+}
+
+.mop-value {
+  font-weight: 700;
+  color: #0066cc;
+  font-size: 1.1em;
+  background: #fff;
+  padding: 4px 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.mop-info .mop-value {
+  font-size: 0.95em;
+  color: #495057;
+  background: rgba(255, 255, 255, 0.7);
+}
