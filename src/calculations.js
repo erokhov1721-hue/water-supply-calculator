@@ -7,39 +7,89 @@ export const MOP_CONSTANTS = {
   gamma: 1.0 // коэффициент трассировки (1.0 = прямой коридор)
 };
 
-// Расчёт высоты зоны в метрах
+// Расчёт высоты зоны в метрах (от 1-го этажа до to)
 export function zoneHeightMeters(h1, hn, to) {
   if (to <= 0) return 0;
   if (to === 1) return h1;
   return h1 + (to - 1) * hn;
 }
 
-// Поиск зоны корпуса, покрывающей этаж
+// Расчёт высоты диапазона этажей (от from до to включительно)
+export function floorRangeHeightMeters(h1, hn, from, to) {
+  if (to < from || from <= 0) return 0;
+  const floorsCount = to - from + 1;
+  if (floorsCount <= 0) return 0;
+
+  // Если диапазон включает 1-й этаж, используем h1 для него
+  if (from === 1) {
+    if (floorsCount === 1) return h1;
+    return h1 + (floorsCount - 1) * hn;
+  }
+  // Все этажи типовые (hn)
+  return floorsCount * hn;
+}
+
+// Получение реального диапазона этажей для зоны в секции
+export function getZoneFloorRange(section, zone) {
+  if (!section || !section.zones || !Array.isArray(section.zones) || !zone) {
+    return null;
+  }
+
+  let currentFloor = 1;
+  for (const z of section.zones) {
+    const zoneTo = Math.min(parseInt(z.to, 10) || 0, section.floors || 0);
+    const zoneFrom = currentFloor;
+
+    if (zoneTo < zoneFrom) continue;
+
+    if (z === zone) {
+      return { from: zoneFrom, to: zoneTo };
+    }
+
+    currentFloor = zoneTo + 1;
+  }
+
+  return null;
+}
+
+// Поиск зоны корпуса, покрывающей этаж (с учётом последовательных диапазонов зон)
 export function sectionZoneForFloor(section, floor) {
   if (!section || !section.zones || !Array.isArray(section.zones)) {
     return null;
   }
-  // Ищем зоны, которые покрывают данный этаж (floor <= z.to)
-  const candidates = section.zones.filter(z => {
-    const zoneTo = parseInt(z.to, 10) || 0;
-    return floor >= 1 && floor <= zoneTo;
-  });
-  if (candidates.length === 0) return null;
-  // Сортируем по to (возрастание) и возвращаем зону с наименьшим to, покрывающую этаж
-  candidates.sort((a, b) => (parseInt(a.to, 10) || 0) - (parseInt(b.to, 10) || 0));
-  return candidates[0];
+  if (floor < 1) return null;
+
+  // Проходим по зонам последовательно, определяя их реальные диапазоны
+  let currentFloor = 1;
+  for (const z of section.zones) {
+    const zoneTo = Math.min(parseInt(z.to, 10) || 0, section.floors || 0);
+    const zoneFrom = currentFloor;
+
+    if (zoneTo < zoneFrom) continue;
+
+    // Проверяем, попадает ли этаж в диапазон этой зоны
+    if (floor >= zoneFrom && floor <= zoneTo) {
+      return z;
+    }
+
+    currentFloor = zoneTo + 1;
+  }
+
+  return null;
 }
 
-// Форматирование коллекторов
+// Форматирование коллекторов (минимум 2 выхода на коллектор)
 export function formatCollectors(unitsPerSection, risersPerSection) {
   if (risersPerSection <= 0 || unitsPerSection <= 0) return '—';
   const base = Math.floor(unitsPerSection / risersPerSection);
   const rem = unitsPerSection % risersPerSection;
   const map = {};
   for (let i = 0; i < risersPerSection; i++) {
-    const n = i < rem ? base + 1 : base;
+    let n = i < rem ? base + 1 : base;
     // Пропускаем стояки без квартир (когда квартир меньше, чем стояков)
     if (n <= 0) continue;
+    // Минимум 2 выхода на коллектор
+    if (n < 2) n = 2;
     map[n] = (map[n] || 0) + 1;
   }
   // Если все стояки без квартир
@@ -51,14 +101,63 @@ export function formatCollectors(unitsPerSection, risersPerSection) {
     .join(' + ');
 }
 
-// Автоподбор n для коллекторов зоны
+// Расчёт распределения коллекторов по количеству выходов для зоны
+// Возвращает объект: { 2: 10, 4: 1, 5: 89 } — 10 коллекторов на 2 выхода, и т.д.
+// Логика: для каждого этажа n = max(квартир, стояков), минимум 2
+export function computeCollectorsDistribution(section, zone, zoneFrom, zoneTo) {
+  const risersPerSection = Math.max(1, +zone.risers || 1);
+  const distribution = {}; // { n: count }
+
+  // Считаем только этажи >= 2 в пределах диапазона зоны
+  for (let f = Math.max(2, zoneFrom); f <= zoneTo; f++) {
+    const aptsPerSec = section.apts[f] || 0;
+    if (aptsPerSec <= 0) continue; // пропускаем этажи без квартир
+
+    // Количество выходов = max(квартир, стояков), минимум 2
+    let n = Math.max(aptsPerSec, risersPerSection);
+    if (n < 2) n = 2;
+
+    // Добавляем 1 коллектор с n выходами
+    distribution[n] = (distribution[n] || 0) + 1;
+  }
+
+  return distribution;
+}
+
+// Форматирование распределения коллекторов в строку
+// { 2: 10, 5: 89 } → "89×5 вых. + 10×2 вых."
+export function formatCollectorsDistribution(distribution) {
+  const entries = Object.entries(distribution)
+    .map(([n, count]) => ({ n: +n, count }))
+    .filter(x => x.count > 0)
+    .sort((a, b) => b.n - a.n); // сортировка по убыванию выходов
+
+  if (entries.length === 0) return '—';
+
+  return entries.map(x => `${x.count}×${x.n} вых.`).join(' + ');
+}
+
+// Автоподбор n для коллекторов зоны (максимальное количество выходов)
+// Используется для BOM и других расчётов, где нужен один максимум
 export function computeAutoNForZone(section, zone) {
   const to = Math.min(+zone.to || 0, section.floors);
   const risersPerSection = Math.max(1, +zone.risers || 1);
-  let nMax = 1;
+  let nMax = 2; // минимум 2 выхода
   for (let f = 2; f <= to; f++) {
     const aptsPerSec = section.apts[f] || 0;
-    const nFloor = Math.ceil((aptsPerSec || 0) / risersPerSection);
+    const nFloor = Math.max(aptsPerSec || 0, risersPerSection);
+    if (nFloor > nMax) nMax = nFloor;
+  }
+  return nMax;
+}
+
+// Автоподбор n для коллекторов зоны с учётом диапазона этажей
+export function computeAutoNForZoneRange(section, zone, zoneFrom, zoneTo) {
+  const risersPerSection = Math.max(1, +zone.risers || 1);
+  let nMax = 2; // минимум 2 выхода
+  for (let f = Math.max(2, zoneFrom); f <= zoneTo; f++) {
+    const aptsPerSec = section.apts[f] || 0;
+    const nFloor = Math.max(aptsPerSec || 0, risersPerSection);
     if (nFloor > nMax) nMax = nFloor;
   }
   return nMax;
@@ -106,7 +205,9 @@ export function computeFloorsData(sections, h1, hn) {
       let collCellText = '—';
 
       if (z) {
-        zoneCellText = `${z.name} (1–${z.to})`;
+        const zoneRange = getZoneFloorRange(sec, z);
+        const rangeText = zoneRange ? `${zoneRange.from}–${zoneRange.to}` : `1–${z.to}`;
+        zoneCellText = `${z.name} (${rangeText})`;
         const d = z.fixedD || { V1: 0, T3: 0, T4: 0 };
         const fmt = x => x ? `${x} мм` : '—';
         dnCellText = `В1 ${fmt(d.V1)}/Т3 ${fmt(d.T3)}/Т4 ${fmt(d.T4)}`;
@@ -139,7 +240,7 @@ export function computeFloorsData(sections, h1, hn) {
   return { floorsData, warnings };
 }
 
-// Расчёт данных по зонам
+// Расчёт данных по зонам (с последовательным распределением этажей)
 export function computeZonesData(sections, h1, hn, ivptEnabled) {
   const zonesData = [];
   let grandTotalRisersLen = 0;
@@ -147,15 +248,29 @@ export function computeZonesData(sections, h1, hn, ivptEnabled) {
   const byAlbum = { collector: 0, collector_pre_apt: 0, pre_apt: 0 };
 
   sections.forEach((sec, si) => {
-    sec.zones.forEach(z => {
-      const from = 1;
-      const to = Math.min(+z.to || 0, sec.floors || 0);
+    // Для каждого корпуса начинаем с 1-го этажа
+    let currentFloor = 1;
 
+    sec.zones.forEach((z, zoneIdx) => {
+      // Максимальный этаж зоны (ограничен этажностью корпуса)
+      const zoneMaxFloor = Math.min(+z.to || 0, sec.floors || 0);
+
+      // Диапазон этажей для этой зоны
+      const zoneFrom = currentFloor;
+      const zoneTo = zoneMaxFloor;
+
+      // Если зона не имеет валидного диапазона — пропускаем
+      if (zoneTo < zoneFrom) {
+        return;
+      }
+
+      // Считаем квартиры и аренду только в диапазоне этой зоны
       let aptsInZone = 0, rentInZone = 0;
-      for (let f = from; f <= to; f++) {
-        if (f === 1) {
-          if (sec.rent.enabled) rentInZone += (sec.rent.qty || 0);
-        } else {
+      for (let f = zoneFrom; f <= zoneTo; f++) {
+        if (f === 1 && sec.rent.enabled) {
+          // Аренда только на 1-м этаже
+          rentInZone += (sec.rent.qty || 0);
+        } else if (f >= 2) {
           aptsInZone += (sec.apts[f] || 0);
         }
       }
@@ -163,7 +278,8 @@ export function computeZonesData(sections, h1, hn, ivptEnabled) {
       const risersPerSection = Math.max(1, +z.risers || 1);
       const d = z.fixedD || { V1: 0, T3: 0, T4: 0 };
 
-      const hZone = zoneHeightMeters(h1, hn, to);
+      // Высота зоны — от zoneFrom до zoneTo
+      const hZone = floorRangeHeightMeters(h1, hn, zoneFrom, zoneTo);
       const lenOneRiser = hZone;
       const lenAllRisers = lenOneRiser * risersPerSection;
 
@@ -184,14 +300,20 @@ export function computeZonesData(sections, h1, hn, ivptEnabled) {
         byAlbum[aKey] += aptsInZone;
       }
 
-      const nAuto = computeAutoNForZone(sec, z);
+      // Автоподбор n с учётом диапазона этажей зоны
+      const nAuto = computeAutoNForZoneRange(sec, z, zoneFrom, zoneTo);
       const bom = materializeKuuBom(aKey, aptsInZone, { n: nAuto, ivptEnabled });
+
+      // Распределение коллекторов по количеству выходов для зоны
+      const collectorsDistribution = computeCollectorsDistribution(sec, z, zoneFrom, zoneTo);
 
       zonesData.push({
         sectionIndex: si,
         zone: z,
-        from,
-        to,
+        from: zoneFrom,
+        to: zoneTo,
+        zoneFrom,     // дублирование для явности
+        zoneTo,       // дублирование для явности
         aptsInZone,
         rentInZone,
         risersPerSection,
@@ -202,8 +324,12 @@ export function computeZonesData(sections, h1, hn, ivptEnabled) {
         albumKey: aKey,
         albumName: ALBUMS[aKey] || ALBUMS.collector,
         nAuto,
-        bom
+        bom,
+        collectorsDistribution  // { 2: 10, 5: 89 } — распределение коллекторов
       });
+
+      // Переход к следующей зоне: начиная с этажа после текущей
+      currentFloor = zoneTo + 1;
     });
   });
 
@@ -235,16 +361,23 @@ export function computeRisersByDiameter(byDiameter) {
   return result;
 }
 
-// Суммарные стояки по зданию (без разреза по корпусам)
+// Суммарные стояки по зданию (без разреза по корпусам) — с последовательным расчётом зон
 export function computeRisersOverall(sections, h1, hn) {
   const overall = new Map();
 
   sections.forEach(sec => {
+    let currentFloor = 1;
+
     sec.zones.forEach(z => {
-      const to = Math.min(+z.to || 0, sec.floors || 0);
+      const zoneMaxFloor = Math.min(+z.to || 0, sec.floors || 0);
+      const zoneFrom = currentFloor;
+      const zoneTo = zoneMaxFloor;
+
+      if (zoneTo < zoneFrom) return;
+
       const risers = Math.max(1, +z.risers || 1);
       const d = z.fixedD || {};
-      const h = zoneHeightMeters(h1, hn, to);
+      const h = floorRangeHeightMeters(h1, hn, zoneFrom, zoneTo);
       const lenAll = h * risers;
 
       ['V1', 'T3', 'T4'].forEach(sys => {
@@ -256,6 +389,8 @@ export function computeRisersOverall(sections, h1, hn) {
         cur.len += lenAll;
         overall.set(key, cur);
       });
+
+      currentFloor = zoneTo + 1;
     });
   });
 
@@ -276,27 +411,37 @@ export function computeRisersOverall(sections, h1, hn) {
   return result;
 }
 
-// Спецификации КУУ (по корпусам и общая)
+// Спецификации КУУ (по корпусам и общая) — с последовательным расчётом зон
 export function computeSpecsAggregates(sections, ivptEnabled) {
   const perSectionMap = new Map();
   const overallMap = new Map();
 
   sections.forEach((sec, si) => {
     const secMap = new Map();
+    let currentFloor = 1;
+
     sec.zones.forEach(z => {
-      const to = Math.min(+z.to || 0, sec.floors || 0);
+      const zoneMaxFloor = Math.min(+z.to || 0, sec.floors || 0);
+      const zoneFrom = currentFloor;
+      const zoneTo = zoneMaxFloor;
+
+      if (zoneTo < zoneFrom) return;
+
       let aptsInZone = 0;
-      for (let f = 1; f <= to; f++) {
-        if (f > 1) aptsInZone += (sec.apts[f] || 0);
+      for (let f = zoneFrom; f <= zoneTo; f++) {
+        if (f >= 2) aptsInZone += (sec.apts[f] || 0);
       }
+
       const aKey = z.albumType || 'collector';
-      const nAuto = computeAutoNForZone(sec, z);
+      const nAuto = computeAutoNForZoneRange(sec, z, zoneFrom, zoneTo);
       const bom = materializeKuuBom(aKey, aptsInZone, { n: nAuto, ivptEnabled });
       bom.forEach(item => {
         const key = `${item.name}||${item.unit || 'шт'}`;
         secMap.set(key, (secMap.get(key) || 0) + (item.qty || 0));
         overallMap.set(key, (overallMap.get(key) || 0) + (item.qty || 0));
       });
+
+      currentFloor = zoneTo + 1;
     });
     perSectionMap.set(si, secMap);
   });
@@ -320,19 +465,27 @@ export function computeSpecsAggregates(sections, ivptEnabled) {
   return { perSectionData, overallData };
 }
 
-// BOM построчно для экспорта
+// BOM построчно для экспорта — с последовательным расчётом зон
 export function computeBomData(sections, ivptEnabled) {
   const bomData = [];
 
   sections.forEach((sec, si) => {
+    let currentFloor = 1;
+
     sec.zones.forEach(z => {
-      const to = Math.min(+z.to || 0, sec.floors || 0);
+      const zoneMaxFloor = Math.min(+z.to || 0, sec.floors || 0);
+      const zoneFrom = currentFloor;
+      const zoneTo = zoneMaxFloor;
+
+      if (zoneTo < zoneFrom) return;
+
       let aptsInZone = 0;
-      for (let f = 1; f <= to; f++) {
-        if (f > 1) aptsInZone += (sec.apts[f] || 0);
+      for (let f = zoneFrom; f <= zoneTo; f++) {
+        if (f >= 2) aptsInZone += (sec.apts[f] || 0);
       }
+
       const aKey = z.albumType || 'collector';
-      const nAuto = computeAutoNForZone(sec, z);
+      const nAuto = computeAutoNForZoneRange(sec, z, zoneFrom, zoneTo);
       const bom = materializeKuuBom(aKey, aptsInZone, { n: nAuto, ivptEnabled });
 
       if (bom.length === 0) {
@@ -341,6 +494,8 @@ export function computeBomData(sections, ivptEnabled) {
           zoneName: z.name,
           albumName: ALBUMS[aKey] || '',
           nAuto,
+          zoneFrom,
+          zoneTo,
           name: '(состав не задан)',
           unit: '',
           qty: ''
@@ -352,12 +507,16 @@ export function computeBomData(sections, ivptEnabled) {
             zoneName: z.name,
             albumName: ALBUMS[aKey] || '',
             nAuto,
+            zoneFrom,
+            zoneTo,
             name: item.name,
             unit: item.unit || 'шт',
             qty: item.qty
           });
         });
       }
+
+      currentFloor = zoneTo + 1;
     });
   });
 
@@ -481,5 +640,132 @@ export function computeMopPexTotals(sections) {
   return {
     totalV1: Math.round(totalV1 * 100) / 100,
     totalT3: Math.round(totalT3 * 100) / 100
+  };
+}
+
+/**
+ * Вычисляет данные пусконаладочных работ по всем корпусам и системам.
+ * Эта функция является единым источником данных для:
+ * - "Результаты расчёта → Трубопроводы → Пусконаладочные работы"
+ * - "Смета → Пусконаладочные работы"
+ *
+ * @param {Array} zonesData - данные зон из computeZonesData
+ * @param {Array} sections - массив корпусов
+ * @returns {Object} объект с данными пусконаладки:
+ *   - bySectionAndSystem: Map с ключом "sectionIndex:system" и значением длины
+ *   - bySection: Map с итогами по корпусам
+ *   - bySystem: Map с итогами по системам
+ *   - grandTotal: общая длина
+ *   - rows: массив строк для использования в смете
+ */
+export function computeCommissioningData(zonesData, sections) {
+  const bySectionAndSystem = new Map(); // key: "sectionIndex:system" -> length
+  const bySection = new Map(); // sectionIndex -> totalLength
+  const bySystem = new Map(); // system -> totalLength
+  let grandTotal = 0;
+
+  // 1. Собираем данные из zonesData (стальные трубы стояков)
+  if (zonesData && zonesData.length > 0) {
+    zonesData.forEach(zd => {
+      const si = zd.sectionIndex;
+      const d = zd.d || {};
+
+      ['V1', 'T3', 'T4'].forEach(sys => {
+        const dia = d[sys] || 0;
+        if (dia > 0) {
+          const totalLen = zd.hZone * zd.risersPerSection;
+          const key = `${si}:${sys}`;
+
+          // По корпусу и системе
+          bySectionAndSystem.set(key, (bySectionAndSystem.get(key) || 0) + totalLen);
+
+          // По корпусу (итого)
+          bySection.set(si, (bySection.get(si) || 0) + totalLen);
+
+          // По системе (итого)
+          bySystem.set(sys, (bySystem.get(sys) || 0) + totalLen);
+
+          grandTotal += totalLen;
+        }
+      });
+    });
+  }
+
+  // 2. Добавляем данные PP-R труб (МОП)
+  if (sections && sections.length > 0) {
+    sections.forEach((sec, si) => {
+      const mopResult = computeMopPexLengthsForSection(sec);
+
+      if (mopResult.lengthV1 > 0) {
+        const keyV1 = `${si}:V1`;
+        bySectionAndSystem.set(keyV1, (bySectionAndSystem.get(keyV1) || 0) + mopResult.lengthV1);
+        bySection.set(si, (bySection.get(si) || 0) + mopResult.lengthV1);
+        bySystem.set('V1', (bySystem.get('V1') || 0) + mopResult.lengthV1);
+        grandTotal += mopResult.lengthV1;
+      }
+
+      if (mopResult.lengthT3 > 0) {
+        const keyT3 = `${si}:T3`;
+        bySectionAndSystem.set(keyT3, (bySectionAndSystem.get(keyT3) || 0) + mopResult.lengthT3);
+        bySection.set(si, (bySection.get(si) || 0) + mopResult.lengthT3);
+        bySystem.set('T3', (bySystem.get('T3') || 0) + mopResult.lengthT3);
+        grandTotal += mopResult.lengthT3;
+      }
+    });
+  }
+
+  // 3. Формируем массив строк для использования в смете
+  // ВАЖНО: Т4 (рециркуляция) исключена из сметы пусконаладки
+  const COMMISSIONING_COEFF = 0.02; // усл. ед. на 1 метр трубопровода
+  const rows = [];
+
+  const sortedSections = Array.from(bySection.keys()).sort((a, b) => a - b);
+
+  sortedSections.forEach(si => {
+    // B1 (ХВС) - из V1
+    const keyV1 = `${si}:V1`;
+    const lenV1 = bySectionAndSystem.get(keyV1) || 0;
+    if (lenV1 > 0) {
+      rows.push({
+        sectionIndex: si,
+        building: `Корпус ${si + 1}`,
+        systemCode: 'B1',
+        systemName: 'ХВС',
+        name: 'Пусконаладочные работы по системе ХВС',
+        unit: 'усл. ед.',
+        pipeLength: Math.round(lenV1 * 100) / 100,
+        quantity: Math.round(lenV1 * COMMISSIONING_COEFF * 100) / 100,
+        unitPrice: null,
+        total: null,
+      });
+    }
+
+    // T3 (ГВС)
+    const keyT3 = `${si}:T3`;
+    const lenT3 = bySectionAndSystem.get(keyT3) || 0;
+    if (lenT3 > 0) {
+      rows.push({
+        sectionIndex: si,
+        building: `Корпус ${si + 1}`,
+        systemCode: 'T3',
+        systemName: 'ГВС',
+        name: 'Пусконаладочные работы по системе ГВС',
+        unit: 'усл. ед.',
+        pipeLength: Math.round(lenT3 * 100) / 100,
+        quantity: Math.round(lenT3 * COMMISSIONING_COEFF * 100) / 100,
+        unitPrice: null,
+        total: null,
+      });
+    }
+
+    // T4 (рециркуляция) - НЕ добавляется в rows для сметы
+  });
+
+  return {
+    bySectionAndSystem,
+    bySection,
+    bySystem,
+    grandTotal,
+    rows, // готовые строки для сметы (только B1/ХВС и T3/ГВС)
   };
 }

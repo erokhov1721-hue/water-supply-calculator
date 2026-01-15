@@ -7,6 +7,7 @@ export const TABS = [
   { id: 'equipment', label: 'Оборудование' },
   { id: 'inlet', label: 'Узел ввода' },
   { id: 'external', label: 'Наружные сети' },
+  { id: 'specification', label: 'Спецификация' },
   { id: 'estimate', label: 'Смета' },
 ];
 
@@ -16,9 +17,25 @@ let activeTabId = 'residential';
 // Callback при смене вкладки
 let onTabChangeCallback = null;
 
+// Callback для рендеринга спецификации
+let specificationRenderer = null;
+
+// Callback для рендеринга сметы
+let estimateRenderer = null;
+
 // Установка callback
 export function setOnTabChange(callback) {
   onTabChangeCallback = callback;
+}
+
+// Установка renderer для спецификации
+export function setSpecificationRenderer(renderer) {
+  specificationRenderer = renderer;
+}
+
+// Установка renderer для сметы
+export function setEstimateRenderer(renderer) {
+  estimateRenderer = renderer;
 }
 
 // Получение активной вкладки
@@ -75,11 +92,15 @@ export function renderTabContent() {
   // Все контейнеры вкладок
   const calculatorContainer = document.getElementById('calculatorContainer');
   const undergroundContainer = document.getElementById('undergroundContainer');
+  const specificationContainer = document.getElementById('specificationContainer');
+  const estimateContainer = document.getElementById('estimateContainer');
   const placeholderContainer = document.getElementById('placeholderContainer');
 
   // Скрываем все контейнеры
   if (calculatorContainer) calculatorContainer.style.display = 'none';
   if (undergroundContainer) undergroundContainer.style.display = 'none';
+  if (specificationContainer) specificationContainer.style.display = 'none';
+  if (estimateContainer) estimateContainer.style.display = 'none';
   if (placeholderContainer) placeholderContainer.style.display = 'none';
 
   // Показываем нужный контейнер
@@ -87,6 +108,22 @@ export function renderTabContent() {
     if (calculatorContainer) calculatorContainer.style.display = 'block';
   } else if (activeTabId === 'underground') {
     if (undergroundContainer) undergroundContainer.style.display = 'block';
+  } else if (activeTabId === 'specification') {
+    if (specificationContainer) {
+      specificationContainer.style.display = 'block';
+      // Вызываем renderer для обновления данных
+      if (specificationRenderer) {
+        specificationRenderer();
+      }
+    }
+  } else if (activeTabId === 'estimate') {
+    if (estimateContainer) {
+      estimateContainer.style.display = 'block';
+      // Вызываем renderer для обновления данных сметы
+      if (estimateRenderer) {
+        estimateRenderer();
+      }
+    }
   } else {
     // Показываем заглушку для остальных вкладок
     if (placeholderContainer) {
@@ -106,6 +143,7 @@ function renderPlaceholder(container) {
     equipment: 'Здесь будет подбор оборудования: насосы, фильтры, запорная арматура, приборы учёта.',
     inlet: 'Здесь будут расчёты узла ввода: водомерный узел, регуляторы давления, обратные клапаны.',
     external: 'Здесь будут расчёты наружных сетей: трассировка, диаметры, гидравлический расчёт.',
+    specification: 'Здесь будет формирование спецификации оборудования и материалов для системы водоснабжения.',
     estimate: 'Здесь будет формирование сметы: расценки, объёмы работ, стоимость материалов и монтажа.'
   };
 
@@ -144,6 +182,11 @@ function getTabIcon(tabId) {
     </svg>`,
     external: `<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <path d="M3 3h18v18H3zM9 3v18M15 3v18M3 9h18M3 15h18"/>
+    </svg>`,
+    specification: `<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+      <rect x="9" y="3" width="6" height="4" rx="1"/>
+      <path d="M9 12h6M9 16h6"/>
     </svg>`,
     estimate: `<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>

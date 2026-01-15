@@ -40,7 +40,8 @@ export function makeDefaultSection() {
     // Параметры расчёта сшитого полиэтилена в МОП
     mop: {
       L: 30,  // длина МОП в метрах
-      r: 0.5  // положение коллектора: 0 - у торца, 0.5 - в центре, 1 - у другого торца
+      r: 0.5, // положение коллектора: 0 - у торца, 0.5 - в центре, 1 - у другого торца
+      dn: 20  // диаметр трубы: 16, 20, 25, 32, 40
     }
   };
 }
@@ -81,7 +82,9 @@ export function loadCalculatorState(data) {
     // Миграция: добавляем поля mop если отсутствуют
     sections.forEach(sec => {
       if (!sec.mop) {
-        sec.mop = { L: 30, r: 0.5 };
+        sec.mop = { L: 30, r: 0.5, dn: 20 };
+      } else if (sec.mop.dn === undefined) {
+        sec.mop.dn = 20;
       }
     });
   } else {
@@ -331,7 +334,7 @@ export function getCalculatorParams() {
 export function setMopLength(si, value) {
   if (!sections[si]) return false;
   if (!sections[si].mop) {
-    sections[si].mop = { L: 30, r: 0.5 };
+    sections[si].mop = { L: 30, r: 0.5, dn: 20 };
   }
   sections[si].mop.L = Math.max(0, +value || 0);
   notifyStateChange();
@@ -342,7 +345,7 @@ export function setMopLength(si, value) {
 export function setMopPosition(si, value) {
   if (!sections[si]) return false;
   if (!sections[si].mop) {
-    sections[si].mop = { L: 30, r: 0.5 };
+    sections[si].mop = { L: 30, r: 0.5, dn: 20 };
   }
   // Допустимые значения: 0, 0.5, 1
   const r = +value;
@@ -356,7 +359,24 @@ export function setMopPosition(si, value) {
 // Миграция секции - добавление mop если отсутствует
 export function ensureMopFields(section) {
   if (!section.mop) {
-    section.mop = { L: 30, r: 0.5 };
+    section.mop = { L: 30, r: 0.5, dn: 20 };
+  } else if (section.mop.dn === undefined) {
+    section.mop.dn = 20;
   }
   return section;
+}
+
+// Установка диаметра трубы для МОП
+export function setMopDiameter(si, value) {
+  if (!sections[si]) return false;
+  if (!sections[si].mop) {
+    sections[si].mop = { L: 30, r: 0.5, dn: 20 };
+  }
+  // Допустимые значения: 16, 20, 25, 32, 40
+  const dn = +value;
+  if ([16, 20, 25, 32, 40].includes(dn)) {
+    sections[si].mop.dn = dn;
+  }
+  notifyStateChange();
+  return true;
 }
