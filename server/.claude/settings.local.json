@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start http://localhost:3000)"
+    ]
+  }
+}
